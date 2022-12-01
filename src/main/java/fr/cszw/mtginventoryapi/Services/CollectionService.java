@@ -26,48 +26,63 @@ public class CollectionService {
         this.cardRepository = cardRepository;
         this.cardJSONService = cardJSONService;
         this.placeService = placeService;
+
+        System.out.println(this.cardRepository.getSum("5e219788-ec9a-4dc6-8884-c3a5eabf0491"));
     }
 
     public List<Card> getAllCardOfUser(String user) {
         return this.cardRepository.findByOwner(user);
     }
 
-    public boolean addCardsToCollection(List<Card> cards, String user) throws Exception {
+    public List<Card> addCardsToCollection(List<Card> cards, String user) throws Exception {
         List<Card> cardToInsert = new ArrayList<>();
         List<Card> cardToUpdate = new ArrayList<>();
         cards.forEach(card -> {
-            Card found = new Card(cardJSONService.findCardByScryfallId(card.getScryfallID()));
-            if (found == null) return;
-
-            found.setOwner(user);
-            found.setFoil(card.isFoil());
-            found.setPlace(placeService.getPlaceById(card.getPlace().getId()));
-            if (found.getPlace() == null) return;
-            if (!found.getPlace().getUserID().equals(user)) throw new RuntimeException("Place ownership is wrong");
-            found.setOccurences(card.getOccurences());
-
-            Card existing = cardRepository.getCardByOwnerAndScryfallIDAndFoilIs(user, found.getScryfallID(), card.isFoil());
-            if (existing == null) {
-                cardToInsert.add(found);
-            } else if (existing.isFoil() != found.isFoil()) {
-                cardToInsert.add(found);
-            } else if (existing.getPlace() != found.getPlace()) {
-                cardToInsert.add(found);
-            } else if (!existing.getLang().equals(found.getLang())) {
-                cardToInsert.add(found);
+            if (card.getId() != 0) {
+                if (card.getOwner().equals(user)) {
+                    cardToUpdate.add(card);
+                }
             } else {
-                found.setId(existing.getId());
-                found.setOccurences(found.getOccurences() + existing.getOccurences());
-                cardToUpdate.add(found);
+                Card found = new Card(cardJSONService.findCardByScryfallId(card.getScryfallID()));
+                if (found == null) return;
+
+                found.setOwner(user);
+                found.setFoil(card.isFoil());
+                found.setPlace(placeService.getPlaceById(card.getPlace().getId()));
+                if (found.getPlace() == null) return;
+                if (!found.getPlace().getUserID().equals(user)) throw new RuntimeException("Place ownership is wrong");
+                found.setOccurences(card.getOccurences());
+
+                Card existing = cardRepository.getCardByOwnerAndScryfallIDAndFoilIs(user, found.getScryfallID(), card.isFoil());
+                if (existing == null) {
+                    cardToInsert.add(found);
+                } else if (existing.isFoil() != found.isFoil()) {
+                    cardToInsert.add(found);
+                } else if (existing.getPlace() != found.getPlace()) {
+                    cardToInsert.add(found);
+                } else if (!existing.getLang().equals(found.getLang())) {
+                    cardToInsert.add(found);
+                } else {
+                    found.setId(existing.getId());
+                    found.setOccurences(found.getOccurences() + existing.getOccurences());
+                    cardToUpdate.add(found);
+                }
             }
         });
 
         cardRepository.saveAll(cardToUpdate);
         cardRepository.saveAll(cardToInsert);
-
-        return true;
+        cardToUpdate.addAll(cardToInsert);
+        return cardToUpdate;
     }
 
+    public void removeCardsOfCollection(List<Card> cards, String user) {
+        cards.forEach(card -> {
+            if (card.getOwner().equals(user)) {
+                this.cardRepository.delete(card);
+            }
+        });
+    }
     public List<Card> evaluateCardsPrice(String user) {
 
         final String EUR_PRICE = "eur";
@@ -126,5 +141,9 @@ public class CollectionService {
 
         this.cardRepository.saveAll(cards);
         return cards;
+    }
+
+    public Long getAllNumberCardsOfUser(String user) {
+        return this.cardRepository.getSum(user);
     }
 }
