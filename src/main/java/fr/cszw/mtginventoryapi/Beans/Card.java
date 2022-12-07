@@ -23,6 +23,10 @@ public class Card {
     private String editionNumber;
     private String scryfallID;
     private int occurences;
+
+    private String illustration;
+    private String CMLink;
+    private String type;
     private Place place;
     private boolean foil;
 
@@ -48,6 +52,9 @@ public class Card {
         this.set = cardToCopy.getSet();
         this.priceEur = cardToCopy.getPriceEur();
         this.priceUSD = cardToCopy.getPriceUSD();
+        this.illustration = cardToCopy.getIllustration();
+        this.CMLink = cardToCopy.getCMLink();
+        this.type = cardToCopy.getType();
     }
 
     public Card() {

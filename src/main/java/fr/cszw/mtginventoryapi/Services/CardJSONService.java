@@ -34,6 +34,9 @@ public class CardJSONService {
     public static final String CARD_EDITION = "set";
     public static final String CARD_EDITION_NUMBER = "collector_number";
     public static final String CARD_SCRYFALL_ID = "id";
+    public static final String CARD_ILLUSTRATION_LINK = "normal";
+    public static final String CARD_LINKS = "purchase_uris";
+    public static final String CARD_TYPE = "type_line";
 
 
     public List<Card> cardList;
@@ -78,6 +81,15 @@ public class CardJSONService {
                 } else if (CARD_EDITION_NUMBER.equals(fieldname)) {
                     jsonToken = jsonParser.nextToken();
                     card.setEditionNumber(jsonParser.getText());
+                } else if (CARD_ILLUSTRATION_LINK.equals(fieldname)) {
+                    jsonToken = jsonParser.nextToken();
+                    card.setIllustration(jsonParser.getText());
+                } else if (CARD_LINKS.equals(fieldname)) {
+                    jsonToken = jsonParser.nextToken();
+                    card.setCMLink(jsonParser.getText());
+                } else if (CARD_TYPE.equals(fieldname)) {
+                    jsonToken = jsonParser.nextToken();
+                    card.setType(jsonParser.getText());
                 }
 
                 if (jsonToken == JsonToken.START_OBJECT) objectDepth++;
@@ -91,7 +103,12 @@ public class CardJSONService {
                                 String en = card.getName();
                                 if (card.getEnglishName() != null) card.setName(card.getEnglishName());
                                 card.setEnglishName(en);
+                                card.setCMLink("https://www.cardmarket.com/en/Magic/Products/Search?searchString=" + en);
+                            } else {
+                                card.setCMLink("https://www.cardmarket.com/en/Magic/Products/Search?searchString=" + card.getName());
+
                             }
+
                             cardList.add(card);
                             numberOfRecords++;
                         }

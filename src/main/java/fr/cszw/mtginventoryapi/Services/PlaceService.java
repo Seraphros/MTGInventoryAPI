@@ -33,6 +33,13 @@ public class PlaceService {
         return true;
     }
 
+    public boolean deletePlace(Place place, String userId) {
+        if (place.getUserID().equals(userId)) {
+            placeRepository.delete(place);
+        }
+        return true;
+    }
+
     public List<Place> getAllPlaces() {
         return (List<Place>) placeRepository.findAll();
     }
