@@ -1,8 +1,10 @@
 package fr.cszw.mtginventoryapi.Services;
 
 import fr.cszw.mtginventoryapi.Beans.Card;
-import fr.cszw.mtginventoryapi.Beans.Set;
+import fr.cszw.mtginventoryapi.Beans.CardPrice;
+import fr.cszw.mtginventoryapi.Beans.Place;
 import fr.cszw.mtginventoryapi.Repositories.CardRepository;
+import fr.cszw.mtginventoryapi.Repositories.PlaceRepository;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
@@ -19,22 +21,37 @@ import java.util.List;
 public class CollectionService {
 
     private final CardRepository cardRepository;
-    private final CardJSONService cardJSONService;
+    private final PlaceRepository placeRepository;
+    private final CardService cardService;
     private final PlaceService placeService;
 
-    public CollectionService(CardRepository cardRepository, CardJSONService cardJSONService, PlaceService placeService) {
+    public CollectionService(CardRepository cardRepository, PlaceRepository placeRepository, CardService cardService, PlaceService placeService) {
         this.cardRepository = cardRepository;
-        this.cardJSONService = cardJSONService;
+        this.placeRepository = placeRepository;
+        this.cardService = cardService;
         this.placeService = placeService;
-
-        System.out.println(this.cardRepository.getSum("5e219788-ec9a-4dc6-8884-c3a5eabf0491"));
     }
 
     public List<Card> getAllCardOfUser(String user) {
         return this.cardRepository.findByOwner(user);
     }
 
-    public List<Card> addCardsToCollection(List<Card> cards, String user) throws Exception {
+    public List<Card> getCardsOfPlace(String user, int placeId) {
+        Place place = this.placeRepository.findById(placeId).orElse(null);
+
+        if (place != null && place.getUserID().equalsIgnoreCase(user)) {
+            return this.cardRepository.findByPlace(place);
+        } else {
+            return new ArrayList<>();
+        }
+    }
+
+    public void updateAllCards() {
+        this.cardRepository.findAll().forEach(card -> this.cardService.cardList.stream().filter(analysedCard -> analysedCard.getScryfallID().equalsIgnoreCase(card.getScryfallID())).findFirst().ifPresent(baseCard -> this.cardRepository.save(card)));
+
+    }
+
+    public List<Card> addCardsToCollection(List<Card> cards, String user) {
         List<Card> cardToInsert = new ArrayList<>();
         List<Card> cardToUpdate = new ArrayList<>();
         cards.forEach(card -> {
@@ -43,8 +60,7 @@ public class CollectionService {
                     cardToUpdate.add(card);
                 }
             } else {
-                Card found = new Card(cardJSONService.findCardByScryfallId(card.getScryfallID()));
-                if (found == null) return;
+                Card found = new Card(cardService.findCardByScryfallId(card.getScryfallID()));
 
                 found.setOwner(user);
                 found.setFoil(card.isFoil());
@@ -83,29 +99,61 @@ public class CollectionService {
             }
         });
     }
+
     public List<Card> evaluateCardsPrice(String user) {
 
-        final String EUR_PRICE = "eur";
-        final String EUR_PRICE_FOILED = "eur_foil";
-        final String USD_PRICE = "usd";
-        final String USD_PRICE_FOILED = "usd_foil";
 
         List<Card> cards = this.cardRepository.findByOwner(user);
+        List<CardPrice> cardPrices = cardService.priceList;
 
         cards.forEach(card -> {
+
+            CardPrice found;
+            if (card.getLang().equalsIgnoreCase("en")) {
+                found = cardPrices.stream().filter(cardPrice -> (cardPrice.getName().equalsIgnoreCase(card.getName())
+                                && cardPrice.getEdition().equalsIgnoreCase(card.getEdition())
+                                && cardPrice.getEditionNumber().equalsIgnoreCase(card.getEditionNumber())))
+                        .findFirst()
+                        .orElse(null);
+            } else {
+                found = cardPrices.stream().filter(cardPrice -> (cardPrice.getName().equalsIgnoreCase(card.getEnglishName())
+                                && cardPrice.getEdition().equalsIgnoreCase(card.getEdition())
+                                && cardPrice.getEditionNumber().equalsIgnoreCase(card.getEditionNumber())))
+                        .findFirst()
+                        .orElse(null);
+            }
+
+            if (found != null) {
+                if (!card.isFoil()) {
+                    card.setPriceEur(found.getPriceEur());
+                    card.setPriceUSD(found.getPriceUSD());
+                } else {
+                    card.setPriceEur(found.getPriceFoilEur());
+                    card.setPriceUSD(found.getPriceFoilUSD());
+                }
+            }
+
+        });
+
+        this.cardRepository.saveAll(cards);
+        return cards;
+    }
+
+    public Card evaluateCardPrice(int id, String user) {
+        Card card = this.cardRepository.findById(id).orElse(null);
+        if (card != null && card.getOwner().equalsIgnoreCase(user)) {
+            final String EUR_PRICE = "eur";
+            final String EUR_PRICE_FOILED = "eur_foil";
+            final String USD_PRICE = "usd";
+            final String USD_PRICE_FOILED = "usd_foil";
+
             try {
                 URL url = new URL("https://api.scryfall.com/cards/" + card.getEdition() + "/" + card.getEditionNumber());
                 HttpURLConnection con = (HttpURLConnection) url.openConnection();
                 con.setRequestMethod("GET");
                 JsonFactory jsonfactory = new JsonFactory(); //init factory
-                int numberOfRecords = 0;
-
-
                 JsonParser jsonParser = jsonfactory.createJsonParser(con.getInputStream());
                 JsonToken jsonToken = jsonParser.nextToken();
-
-                Set set = new Set();
-                int objectDepth = 0;
 
                 while (jsonToken != null) { //Iterate all elements of array
                     String fieldname = jsonParser.getCurrentName();
@@ -137,10 +185,9 @@ public class CollectionService {
                 e.printStackTrace();
             }
 
-        });
-
-        this.cardRepository.saveAll(cards);
-        return cards;
+            this.cardRepository.save(card);
+        }
+        return card;
     }
 
     public Long getAllNumberCardsOfUser(String user) {

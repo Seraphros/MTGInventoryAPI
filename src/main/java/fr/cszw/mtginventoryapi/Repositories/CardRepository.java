@@ -10,8 +10,9 @@ import java.util.List;
 
 public interface CardRepository extends CrudRepository<Card, Integer> {
     List<Card> findByOwner(String userId);
-    Card findByOwnerAndScryfallIDAndFoilIs(String userId, String scryfallId, boolean isFoil);
     Card getCardByOwnerAndScryfallIDAndFoilIs(String userId, String scryfallId, boolean isFoil);
     @Query("SELECT SUM(c.occurences) from Card c where c.owner=?1")
     Long getSum(String owner);
+
+    List<Card> findByPlace(Place place);
 }

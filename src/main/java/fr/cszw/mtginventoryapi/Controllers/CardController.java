@@ -2,7 +2,8 @@ package fr.cszw.mtginventoryapi.Controllers;
 
 import fr.cszw.mtginventoryapi.Beans.Card;
 import fr.cszw.mtginventoryapi.Repositories.CardRepository;
-import fr.cszw.mtginventoryapi.Services.CardJSONService;
+import fr.cszw.mtginventoryapi.Services.CardService;
+import fr.cszw.mtginventoryapi.Services.FileDownloader;
 import fr.cszw.mtginventoryapi.Services.SetJSONService;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.adapters.springsecurity.account.SimpleKeycloakAccount;
@@ -26,7 +27,10 @@ public class CardController {
     SetJSONService setJSONService;
 
     @Autowired
-    CardJSONService cardJSONService;
+    CardService cardService;
+
+    @Autowired
+    FileDownloader fileDownloader;
 
     private final Logger logger = LoggerFactory.getLogger(CardController.class);
 
@@ -56,8 +60,13 @@ public class CardController {
     }
 
     @GetMapping(path = "/card/searchLocal")
-    public List<Card> indexLocal(String name) throws Exception {
-        return cardJSONService.findCardByName(name);
+    public List<Card> indexLocal(String name) {
+        return cardService.findCardByName(name);
+    }
+
+    @GetMapping(path = "/card/searchByEditionNumber")
+    public Card findCardByEditionNumber(String edition, String editionNumber) {
+        return cardService.findCardByEditionNumber(edition, editionNumber);
     }
 
     @GetMapping(path = "/db")
@@ -72,6 +81,10 @@ public class CardController {
         KeycloakPrincipal principal1 = (KeycloakPrincipal) details.getPrincipal();
 
         return principal1.getKeycloakSecurityContext().getToken().getPreferredUsername();
+    }
 
+    @GetMapping(path = "/card/download", produces = "application/json")
+    public void test() {
+        fileDownloader.download("/default-cards/default-cards-20230101100506.json");
     }
 }

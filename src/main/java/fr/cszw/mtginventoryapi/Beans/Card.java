@@ -38,6 +38,7 @@ public class Card {
     @Transient
     private Set set;
 
+
     public Card(Card cardToCopy) {
         this.name = cardToCopy.getName();
         this.lang = cardToCopy.getLang();
@@ -61,17 +62,13 @@ public class Card {
         this.lang = "";
     }
 
-    public Card(String name) {
-        this.name = name;
-    }
-
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     public int getId() {
         return id;
     }
 
-    @Column(name = "name", nullable = true)
+    @Column(name = "name")
     public String getName() {
         return name;
     }
@@ -87,12 +84,12 @@ public class Card {
         return place;
     }
 
-    @Column(name = "priceEur", nullable = true)
+    @Column(name = "priceEur")
     public Double getPriceEur() {
         return priceEur;
     }
 
-    @Column(name = "priceUSD", nullable = true)
+    @Column(name = "priceUSD")
     public Double getPriceUSD() {
         return priceUSD;
     }

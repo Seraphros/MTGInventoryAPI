@@ -20,12 +20,12 @@ public class CollectionController {
     CollectionService collectionService;
 
     @PostMapping(path = "/", produces = MediaType.APPLICATION_JSON_VALUE)
-    public List<Card> insertCardsIntoCollection(KeycloakAuthenticationToken principal,@Valid @NotNull @RequestBody List<Card> cards) throws Exception {
+    public List<Card> insertCardsIntoCollection(KeycloakAuthenticationToken principal,@Valid @NotNull @RequestBody List<Card> cards) {
         return collectionService.addCardsToCollection(cards, principal.getName());
     }
 
     @DeleteMapping(path = "/", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity deleteCardsOfCollection(KeycloakAuthenticationToken principal, @Valid @NotNull @RequestBody List<Card> cards) throws Exception {
+    public ResponseEntity deleteCardsOfCollection(KeycloakAuthenticationToken principal, @Valid @NotNull @RequestBody List<Card> cards) {
         collectionService.removeCardsOfCollection(cards, principal.getName());
         return ResponseEntity.ok().build();
     }
@@ -33,6 +33,11 @@ public class CollectionController {
     @PostMapping(path = "/evaluate", produces = "application/json")
     public List<Card> evaluateCardsPrice(KeycloakAuthenticationToken principal) {
         return collectionService.evaluateCardsPrice(principal.getName());
+    }
+
+    @GetMapping(path = "/evaluateByCard", produces = "application/json")
+    public Card evaluateCardsPrice(KeycloakAuthenticationToken principal, @RequestParam @NotNull int id) {
+        return collectionService.evaluateCardPrice(id, principal.getName());
     }
 
     @GetMapping(path = "/total", produces = "application/text")
@@ -43,6 +48,11 @@ public class CollectionController {
     @GetMapping(path = "/", produces = "application/json")
     public List<Card> getTotalCollection(KeycloakAuthenticationToken principal) {
         return collectionService.getAllCardOfUser(principal.getName());
+    }
+
+    @GetMapping(path = "/place")
+    public List<Card> getPlaceCards(KeycloakAuthenticationToken principal, @RequestParam @NotNull int id) {
+        return collectionService.getCardsOfPlace(principal.getName(), id);
     }
 
 }
