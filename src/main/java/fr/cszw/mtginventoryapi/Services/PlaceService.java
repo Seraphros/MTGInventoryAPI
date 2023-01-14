@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 
@@ -48,6 +49,8 @@ public class PlaceService {
         return placeRepository.findById(id).orElse(null);
     }
     public List<Place> getAllPlacesOfUser(String userId) {
-        return (List<Place>) placeRepository.findByUserID(userId);
+        List<Place> places = placeRepository.findByUserID(userId);
+        places.sort(Comparator.comparing(Place::getName));
+        return places;
     }
 }

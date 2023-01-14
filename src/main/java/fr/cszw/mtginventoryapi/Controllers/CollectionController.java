@@ -1,7 +1,10 @@
 package fr.cszw.mtginventoryapi.Controllers;
 
 import fr.cszw.mtginventoryapi.Beans.Card;
+import fr.cszw.mtginventoryapi.Beans.Paginator;
+import fr.cszw.mtginventoryapi.Beans.PaginatorRequest;
 import fr.cszw.mtginventoryapi.Services.CollectionService;
+import lombok.extern.slf4j.Slf4j;
 import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -48,6 +51,16 @@ public class CollectionController {
     @GetMapping(path = "/", produces = "application/json")
     public List<Card> getTotalCollection(KeycloakAuthenticationToken principal) {
         return collectionService.getAllCardOfUser(principal.getName());
+    }
+
+    @PostMapping(path = "/paginated", produces = "application/json")
+    public List<Card> getTotalCollection(KeycloakAuthenticationToken principal,  @Valid @NotNull @RequestBody PaginatorRequest search) {
+        return collectionService.getAllCardOfUserPaginated(principal.getName(), search.getPage(), search.getSearch(), search.getOrder());
+    }
+
+    @PostMapping(path = "/paginator", produces = "application/json")
+    public Paginator getPaginator(KeycloakAuthenticationToken principal, @Valid @NotNull @RequestBody PaginatorRequest search) {
+        return collectionService.getCollectionPaginator(principal.getName(), search.getSearch());
     }
 
     @GetMapping(path = "/place")

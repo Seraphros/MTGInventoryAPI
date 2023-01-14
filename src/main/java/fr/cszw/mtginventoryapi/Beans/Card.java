@@ -23,15 +23,12 @@ public class Card {
     private String editionNumber;
     private String scryfallID;
     private int occurences;
-
     private String illustration;
     private String CMLink;
     private String type;
     private Place place;
     private boolean foil;
-
     private String owner;
-
     private Double priceEur;
     private Double priceUSD;
 

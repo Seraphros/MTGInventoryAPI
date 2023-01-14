@@ -2,9 +2,11 @@ package fr.cszw.mtginventoryapi.Services;
 
 import fr.cszw.mtginventoryapi.Beans.Card;
 import fr.cszw.mtginventoryapi.Beans.CardPrice;
+import fr.cszw.mtginventoryapi.Beans.Paginator;
 import fr.cszw.mtginventoryapi.Beans.Place;
 import fr.cszw.mtginventoryapi.Repositories.CardRepository;
 import fr.cszw.mtginventoryapi.Repositories.PlaceRepository;
+import lombok.extern.slf4j.Slf4j;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
@@ -14,7 +16,10 @@ import org.springframework.stereotype.Service;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @Scope("singleton")
@@ -24,6 +29,8 @@ public class CollectionService {
     private final PlaceRepository placeRepository;
     private final CardService cardService;
     private final PlaceService placeService;
+
+    private final int PAGE_SIZE = 100;
 
     public CollectionService(CardRepository cardRepository, PlaceRepository placeRepository, CardService cardService, PlaceService placeService) {
         this.cardRepository = cardRepository;
@@ -36,6 +43,119 @@ public class CollectionService {
         return this.cardRepository.findByOwner(user);
     }
 
+    public List<Card> getAllCardOfUserPaginated(String user, int page, String search, String order) {
+        List<Card> cards = this.cardRepository.findByOwner(user);
+        cards = order(cards, order);
+        cards = filter(cards, search);
+        int total = cards.size();
+        List<Card> sublist;
+        if (page * PAGE_SIZE < total)
+            sublist = cards.subList((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+        else
+            sublist = cards.subList((page - 1) * PAGE_SIZE, total);
+
+
+        return sublist;
+    }
+
+    public List<Card> filter(List<Card> cards, String search) {
+        if(search.equals("")) return cards;
+        List<Card> filtered = new ArrayList<>(cards).stream().filter(card -> card.getName().toLowerCase().contains(search.toLowerCase()) ||
+                (card.getEnglishName() != null && card.getEnglishName().toLowerCase().contains(search.toLowerCase())) ||
+                (card.getEdition() != null && card.getEdition().toLowerCase().contains(search.toLowerCase())) ||
+                (card.getType() != null && card.getType().toLowerCase().contains(search.toLowerCase())) ||
+                (card.getPlace() != null && card.getPlace().getName().toLowerCase().contains(search.toLowerCase())) ||
+                (card.getEditionNumber() != null && card.getEditionNumber().toLowerCase().contains(search.toLowerCase()))).collect(Collectors.toList());
+
+        return filtered;
+    }
+
+    public List<Card> order(List<Card> cards, String order) {
+        if (order.split("/").length != 2) return new ArrayList<>();
+
+        String field = order.split("/")[0];
+        boolean direction = order.split("/")[1].equalsIgnoreCase("ASC");
+
+        if (field.equalsIgnoreCase("name")) {
+            if(direction) {
+                cards.sort(Comparator.comparing(Card::getName));
+            } else {
+                cards.sort(Comparator.comparing(Card::getName).reversed());
+            }
+        }
+        if (field.equalsIgnoreCase("number")) {
+            if(direction) {
+                cards.sort(Comparator.comparing(Card::getOccurences));
+            } else {
+                cards.sort(Comparator.comparing(Card::getOccurences).reversed());
+            }
+        }
+        if (field.equalsIgnoreCase("lang")) {
+            if(direction) {
+                cards.sort(Comparator.comparing(Card::getLang));
+            } else {
+                cards.sort(Comparator.comparing(Card::getLang).reversed());
+            }
+        }
+        if (field.equalsIgnoreCase("collection")) {
+            if(direction) {
+                cards.sort(Comparator.comparing(Card::getEdition));
+            } else {
+                cards.sort(Comparator.comparing(Card::getEdition).reversed());
+            }
+        }
+        if (field.equalsIgnoreCase("collectionNumber")) {
+            if(direction) {
+                cards.sort(Comparator.comparing(Card::getEditionNumber));
+            } else {
+                cards.sort(Comparator.comparing(Card::getEditionNumber).reversed());
+            }
+        }
+        if (field.equalsIgnoreCase("collection")) {
+            if(direction) {
+                cards.sort(Comparator.comparing(Card::getEdition));
+            } else {
+                cards.sort(Comparator.comparing(Card::getEdition).reversed());
+            }
+        }
+        if (field.equalsIgnoreCase("type")) {
+            if(direction) {
+                cards.sort(Comparator.comparing(Card::getType));
+            } else {
+                cards.sort(Comparator.comparing(Card::getType).reversed());
+            }
+        }
+        if (field.equalsIgnoreCase("foiled")) {
+            if(direction) {
+                cards.sort(Comparator.comparing(Card::isFoil));
+            } else {
+                cards.sort(Comparator.comparing(Card::isFoil).reversed());
+            }
+        }
+        if (field.equalsIgnoreCase("eur")) {
+            if(direction) {
+                cards.sort(Comparator.comparing(Card::getPriceEur, Comparator.nullsFirst(Comparator.naturalOrder())));
+            } else {
+                cards.sort(Comparator.comparing(Card::getPriceEur, Comparator.nullsFirst(Comparator.naturalOrder())).reversed());
+            }
+        }
+        if (field.equalsIgnoreCase("usd")) {
+            if(direction) {
+                cards.sort(Comparator.comparing(Card::getPriceUSD, Comparator.nullsFirst(Comparator.naturalOrder())));
+            } else {
+                cards.sort(Comparator.comparing(Card::getPriceUSD, Comparator.nullsFirst(Comparator.naturalOrder())).reversed());
+            }
+        }
+        if (field.equalsIgnoreCase("place")) {
+            if(direction) {
+                cards.sort(Comparator.comparing(obj -> obj.getPlace().getName()));
+            } else {
+                cards.sort(Comparator.comparing(obj -> obj.getPlace().getName(), Comparator.reverseOrder()));
+            }
+        }
+        return cards;
+    }
+
     public List<Card> getCardsOfPlace(String user, int placeId) {
         Place place = this.placeRepository.findById(placeId).orElse(null);
 
@@ -44,6 +164,14 @@ public class CollectionService {
         } else {
             return new ArrayList<>();
         }
+    }
+
+    public Paginator getCollectionPaginator(String user, String search) {
+        List<Card> cards = this.cardRepository.findByOwner(user);
+        cards.sort(Comparator.comparing(Card::getName));
+        cards = filter(cards, search);
+        int total = cards.size();
+        return new Paginator(total);
     }
 
     public void updateAllCards() {
@@ -69,7 +197,7 @@ public class CollectionService {
                 if (!found.getPlace().getUserID().equals(user)) throw new RuntimeException("Place ownership is wrong");
                 found.setOccurences(card.getOccurences());
 
-                Card existing = cardRepository.getCardByOwnerAndScryfallIDAndFoilIs(user, found.getScryfallID(), card.isFoil());
+                Card existing = cardRepository.getCardByOwnerAndScryfallIDAndFoilIsAndPlace(user, found.getScryfallID(), card.isFoil(), card.getPlace());
                 if (existing == null) {
                     cardToInsert.add(found);
                 } else if (existing.isFoil() != found.isFoil()) {

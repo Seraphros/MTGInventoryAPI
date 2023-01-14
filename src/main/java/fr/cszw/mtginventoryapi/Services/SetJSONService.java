@@ -1,6 +1,7 @@
 package fr.cszw.mtginventoryapi.Services;
 
 import fr.cszw.mtginventoryapi.Beans.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
@@ -14,6 +15,7 @@ import java.util.List;
 
 @Service
 @Scope("singleton")
+@Slf4j
 public class SetJSONService {
     String[] ips;
 
@@ -79,7 +81,7 @@ public class SetJSONService {
                 jsonToken = jsonParser.nextToken();
             }
 
-            System.out.println("Total Set Records Found : " + numberOfRecords);
+            log.info("Total Set Records Found : " + numberOfRecords);
         } catch (Exception e) {
             e.printStackTrace();
         }

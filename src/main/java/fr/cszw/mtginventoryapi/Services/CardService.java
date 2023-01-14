@@ -3,6 +3,7 @@ package fr.cszw.mtginventoryapi.Services;
 import fr.cszw.mtginventoryapi.Beans.Card;
 import fr.cszw.mtginventoryapi.Beans.CardPrice;
 import fr.cszw.mtginventoryapi.Beans.Set;
+import lombok.extern.slf4j.Slf4j;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonParser;
 import org.codehaus.jackson.JsonToken;
@@ -20,6 +21,7 @@ import java.util.List;
 
 @Service
 @Scope("singleton")
+@Slf4j
 public class CardService {
 
     private final SetJSONService setJSONService;
@@ -151,7 +153,7 @@ public class CardService {
             }
         });*/
 
-        System.out.println("Total Cards Records Found : " + numberOfRecords);
+        log.info("Total Cards Records Found : " + numberOfRecords);
         return listOfCard;
     }
 
@@ -215,7 +217,7 @@ public class CardService {
 
 
 
-        System.out.println("Total Cards Prices Records Found : " + numberOfRecords);
+        log.info("Total Cards Prices Records Found : " + numberOfRecords);
         return listOfCard;
     }
 
