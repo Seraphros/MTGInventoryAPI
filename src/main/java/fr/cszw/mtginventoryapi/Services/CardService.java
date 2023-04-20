@@ -46,8 +46,6 @@ public class CardService {
     public List<CardPrice> priceList;
 
 
-
-
     public CardService(SetJSONService setJSONService, FileDownloader fileDownloader) {
         this.setJSONService = setJSONService;
 
@@ -59,7 +57,7 @@ public class CardService {
             if (jsonFile != null) jsonFile.close();
 
             File priceFile = new File(System.getenv("PRICE_FILE"));
-            if (!priceFile.exists()) fileDownloader.download("/default-cards/default-cards-20230101100506.json");
+            if (!priceFile.exists()) fileDownloader.download("/default-cards/default-cards-20230116100518.json");
             InputStream priceFileStream = new FileInputStream(priceFile);
             priceList = parseJSONPriceCardFromInputStream(priceFileStream);
 
@@ -82,35 +80,35 @@ public class CardService {
         while (jsonToken != null) { //Iterate all elements of array
             String fieldname = jsonParser.getCurrentName();
 
-            if (CARD_SCRYFALL_ID.equals(fieldname)  && objectDepth == 1) {
+            if (CARD_SCRYFALL_ID.equals(fieldname) && objectDepth == 1) {
                 jsonToken = jsonParser.nextToken(); //read next token
                 card.setScryfallID(jsonParser.getText());
             } else if (CARD_NAME.equals(fieldname) && objectDepth == 1) {
                 jsonToken = jsonParser.nextToken();
                 if (reversed) card.setEnglishName(jsonParser.getText());
                 if (!reversed) card.setName(jsonParser.getText());
-            } else if (CARD_LANG.equals(fieldname)  && objectDepth == 1) {
+            } else if (CARD_LANG.equals(fieldname) && objectDepth == 1) {
                 jsonToken = jsonParser.nextToken();
                 card.setLang(jsonParser.getText());
-            } else if (CARD_PRINTED_NAME.equals(fieldname)  && objectDepth == 1) {
+            } else if (CARD_PRINTED_NAME.equals(fieldname) && objectDepth == 1) {
                 jsonToken = jsonParser.nextToken();
                 if (!reversed) card.setEnglishName(jsonParser.getText());
                 if (reversed) card.setName(jsonParser.getText());
-            } else if (CARD_EDITION.equals(fieldname)  && objectDepth == 1) {
+            } else if (CARD_EDITION.equals(fieldname) && objectDepth == 1) {
                 jsonToken = jsonParser.nextToken();
                 String txt = jsonParser.getText();
                 card.setEdition(txt);
                 card.setSet(getSet(card.getEdition()));
-            } else if (CARD_EDITION_NUMBER.equals(fieldname)  && objectDepth == 1) {
+            } else if (CARD_EDITION_NUMBER.equals(fieldname) && objectDepth == 1) {
                 jsonToken = jsonParser.nextToken();
                 card.setEditionNumber(jsonParser.getText());
-            } else if (CARD_ILLUSTRATION_LINK.equals(fieldname)  && objectDepth == 2) {
+            } else if (CARD_ILLUSTRATION_LINK.equals(fieldname) && objectDepth == 2) {
                 jsonToken = jsonParser.nextToken();
                 card.setIllustration(jsonParser.getText());
-            } else if (CARD_LINKS.equals(fieldname)  && objectDepth == 2) {
+            } else if (CARD_LINKS.equals(fieldname) && objectDepth == 2) {
                 jsonToken = jsonParser.nextToken();
                 card.setCMLink(jsonParser.getText());
-            } else if (CARD_TYPE.equals(fieldname)  && objectDepth == 1) {
+            } else if (CARD_TYPE.equals(fieldname) && objectDepth == 1) {
                 jsonToken = jsonParser.nextToken();
                 card.setType(jsonParser.getText());
             }
@@ -121,7 +119,7 @@ public class CardService {
                 objectDepth--;
                 if (objectDepth == 0) {
                     //do some processing, Indexing, saving in DB etc..
-                    if (card.getLang().equals("en") || card.getLang().equals("fr") || card.getLang().equalsIgnoreCase("ja")) {
+                    if (card.getLang().equals("en") || card.getLang().equals("fr") || card.getLang().equalsIgnoreCase("ja") || card.getLang().equalsIgnoreCase("ph")) {
                         if (card.getLang().equals("fr")) {
                             String en = card.getName();
                             if (card.getEnglishName() != null) card.setName(card.getEnglishName());
@@ -180,7 +178,7 @@ public class CardService {
             } else if (CARD_EDITION.equals(fieldname) && objectDepth == 1) {
                 jsonToken = jsonParser.nextToken();
                 card.setEdition(jsonParser.getText());
-            }else if (CARD_EDITION_NUMBER.equals(fieldname) && objectDepth == 1) {
+            } else if (CARD_EDITION_NUMBER.equals(fieldname) && objectDepth == 1) {
                 jsonToken = jsonParser.nextToken();
                 card.setEditionNumber(jsonParser.getText());
             } else if (EUR_PRICE.equals(fieldname) && objectDepth == 2) {
@@ -206,15 +204,14 @@ public class CardService {
             if (jsonToken == JsonToken.END_OBJECT) {
                 objectDepth--;
                 if (objectDepth == 0) {
-                        listOfCard.add(card);
-                        card = new CardPrice();
-                        numberOfRecords++;
+                    listOfCard.add(card);
+                    card = new CardPrice();
+                    numberOfRecords++;
                 }
             }
 
             jsonToken = jsonParser.nextToken();
         }
-
 
 
         log.info("Total Cards Prices Records Found : " + numberOfRecords);
@@ -237,6 +234,7 @@ public class CardService {
                 })
                 .toList();
     }
+
     public Card findCardByScryfallId(String sequence) {
         return this.cardList.stream()
                 .filter(card ->

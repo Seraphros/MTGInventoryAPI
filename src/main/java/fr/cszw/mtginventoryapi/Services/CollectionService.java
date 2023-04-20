@@ -65,6 +65,7 @@ public class CollectionService {
                 (card.getEdition() != null && card.getEdition().toLowerCase().contains(search.toLowerCase())) ||
                 (card.getType() != null && card.getType().toLowerCase().contains(search.toLowerCase())) ||
                 (card.getPlace() != null && card.getPlace().getName().toLowerCase().contains(search.toLowerCase())) ||
+                (card.getLang() != null && card.getLang().toLowerCase().contains(search.toLowerCase())) ||
                 (card.getEditionNumber() != null && card.getEditionNumber().toLowerCase().contains(search.toLowerCase()))).collect(Collectors.toList());
 
         return filtered;
@@ -182,6 +183,7 @@ public class CollectionService {
     public List<Card> addCardsToCollection(List<Card> cards, String user) {
         List<Card> cardToInsert = new ArrayList<>();
         List<Card> cardToUpdate = new ArrayList<>();
+
         cards.forEach(card -> {
             if (card.getId() != 0) {
                 if (card.getOwner().equals(user)) {
@@ -198,18 +200,35 @@ public class CollectionService {
                 found.setOccurences(card.getOccurences());
 
                 Card existing = cardRepository.getCardByOwnerAndScryfallIDAndFoilIsAndPlace(user, found.getScryfallID(), card.isFoil(), card.getPlace());
-                if (existing == null) {
-                    cardToInsert.add(found);
-                } else if (existing.isFoil() != found.isFoil()) {
-                    cardToInsert.add(found);
-                } else if (existing.getPlace() != found.getPlace()) {
-                    cardToInsert.add(found);
-                } else if (!existing.getLang().equals(found.getLang())) {
-                    cardToInsert.add(found);
+
+
+                if (existing == null || existing.isFoil() != found.isFoil() || existing.getPlace() != found.getPlace() || !existing.getLang().equals(found.getLang())) {
+                    Card existingInInsert = cardToInsert.stream().filter(
+                            cardToCheck -> cardToCheck.getEdition().equals(found.getEdition()) &&
+                                    cardToCheck.getEditionNumber().equals(found.getEditionNumber()) &&
+                                    cardToCheck.isFoil() == found.isFoil() &&
+                                    cardToCheck.getPlace() == found.getPlace() &&
+                                    cardToCheck.getLang().equals(found.getLang())).findFirst().orElse(null);
+                    if (existingInInsert != null) {
+                        existingInInsert.setOccurences(existingInInsert.getOccurences() + found.getOccurences());
+                    } else {
+                        cardToInsert.add(found);
+                    }
                 } else {
-                    found.setId(existing.getId());
-                    found.setOccurences(found.getOccurences() + existing.getOccurences());
-                    cardToUpdate.add(found);
+                    Card existingInUpdate = cardToUpdate.stream().filter(
+                            cardToCheck -> cardToCheck.getEdition().equals(found.getEdition()) &&
+                            cardToCheck.getEditionNumber().equals(found.getEditionNumber()) &&
+                            cardToCheck.isFoil() == found.isFoil() &&
+                            cardToCheck.getPlace() == found.getPlace() &&
+                            cardToCheck.getLang().equals(found.getLang())).findFirst().orElse(null);
+
+                    if (existingInUpdate != null) {
+                        existingInUpdate.setOccurences(existingInUpdate.getOccurences() + found.getOccurences());
+                    } else {
+                        found.setId(existing.getId());
+                        found.setOccurences(found.getOccurences() + existing.getOccurences());
+                        cardToUpdate.add(found);
+                    }
                 }
             }
         });
