@@ -87,4 +87,8 @@ public class SetJSONService {
         }
 
     }
+
+    public Set getSetFromList(String setCode) {
+        return this.setList.stream().filter(set -> set.getSet().equals(setCode)).findFirst().orElse(null);
+    }
 }

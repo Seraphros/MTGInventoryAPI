@@ -1,6 +1,8 @@
 package fr.cszw.mtginventoryapi.Services;
 
 
+import lombok.NoArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Scope;
 import org.springframework.core.io.buffer.DataBuffer;
 import org.springframework.core.io.buffer.DataBufferUtils;
@@ -16,11 +18,11 @@ import java.nio.file.StandardOpenOption;
 
 @Service
 @Scope("singleton")
+@NoArgsConstructor
 public class FileDownloader {
 
-    public FileDownloader() {
-
-    }
+    @Value("${PRICE_FILE}")
+    private String dstFolder;
 
     public WebClient webClientWithLargeBuffer() {
         return WebClient.builder()
@@ -36,7 +38,6 @@ public class FileDownloader {
     public void download(String URL_LOCATION) {
         File dstFile;
 // check the directory for existence.
-        String dstFolder = System.getenv("PRICE_FILE");
 
         try {
             Files.createDirectories(Paths.get(new File(dstFolder).getParentFile().getAbsolutePath()));

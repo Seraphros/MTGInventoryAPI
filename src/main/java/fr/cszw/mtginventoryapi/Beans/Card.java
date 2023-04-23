@@ -26,14 +26,21 @@ public class Card {
     private String illustration;
     private String CMLink;
     private String type;
+    private Integer cmc;
+    private String mana;
+    private String color;
     private Place place;
     private boolean foil;
+    private String rarity;
     private String owner;
     private Double priceEur;
     private Double priceUSD;
 
     @Transient
     private Set set;
+
+    @Transient
+    private int rarityValue;
 
 
     public Card(Card cardToCopy) {
@@ -53,6 +60,10 @@ public class Card {
         this.illustration = cardToCopy.getIllustration();
         this.CMLink = cardToCopy.getCMLink();
         this.type = cardToCopy.getType();
+        this.cmc = cardToCopy.getCmc();
+        this.rarity = cardToCopy.getRarity();
+        this.color = cardToCopy.getColor();
+        this.mana = cardToCopy.getMana();
     }
 
     public Card() {
@@ -97,5 +108,11 @@ public class Card {
     public Set getSet() {
         return this.set;
     }
+
+    @Transient
+    public int getRarityValue() {
+        return this.rarityValue;
+    }
+
 
 }

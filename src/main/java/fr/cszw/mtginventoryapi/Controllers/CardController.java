@@ -3,14 +3,14 @@ package fr.cszw.mtginventoryapi.Controllers;
 import fr.cszw.mtginventoryapi.Beans.Card;
 import fr.cszw.mtginventoryapi.Repositories.CardRepository;
 import fr.cszw.mtginventoryapi.Services.CardService;
+import fr.cszw.mtginventoryapi.Services.CollectionService;
 import fr.cszw.mtginventoryapi.Services.FileDownloader;
 import fr.cszw.mtginventoryapi.Services.SetJSONService;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.keycloak.KeycloakPrincipal;
 import org.keycloak.adapters.springsecurity.account.SimpleKeycloakAccount;
 import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -21,28 +21,20 @@ import java.net.URL;
 import java.util.List;
 
 @RestController
+@RequiredArgsConstructor
+@Slf4j
 public class CardController {
 
-    @Autowired
-    SetJSONService setJSONService;
 
-    @Autowired
-    CardService cardService;
-
-    @Autowired
-    FileDownloader fileDownloader;
-
-    private final Logger logger = LoggerFactory.getLogger(CardController.class);
-
-
-
-    @Autowired
-    private CardRepository cardRepository;
-
+    private final SetJSONService setJSONService;
+    private final CardService cardService;
+    private final FileDownloader fileDownloader;
+    private final CollectionService collectionService;
+    private final CardRepository cardRepository;
 
     @GetMapping(path = "/card/search")
     public String index(String name) throws Exception {
-        logger.info("REQUEST TO SEARCH CARD");
+        log.info("REQUEST TO SEARCH CARD");
 
         URL url = new URL("https://api.scryfall.com/cards/search?q="+ name + "+and+lang=fr&unique=prints");
         HttpURLConnection con = (HttpURLConnection) url.openConnection();
@@ -57,6 +49,11 @@ public class CardController {
         in.close();
 
         return content.toString();
+    }
+
+    @GetMapping(path = "/card/update")
+    public void update() {
+        this.collectionService.updateAllCards();
     }
 
     @GetMapping(path = "/card/searchLocal")
@@ -76,7 +73,7 @@ public class CardController {
 
     @GetMapping(path = "/customers")
     public String customers(KeycloakAuthenticationToken principal) {
-        logger.info("REQUEST TO CUSTOMERS");
+        log.info("REQUEST TO CUSTOMERS");
         SimpleKeycloakAccount details = (SimpleKeycloakAccount) principal.getDetails();
         KeycloakPrincipal principal1 = (KeycloakPrincipal) details.getPrincipal();
 

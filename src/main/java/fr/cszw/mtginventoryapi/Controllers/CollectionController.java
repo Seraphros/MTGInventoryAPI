@@ -4,9 +4,8 @@ import fr.cszw.mtginventoryapi.Beans.Card;
 import fr.cszw.mtginventoryapi.Beans.Paginator;
 import fr.cszw.mtginventoryapi.Beans.PaginatorRequest;
 import fr.cszw.mtginventoryapi.Services.CollectionService;
-import lombok.extern.slf4j.Slf4j;
+import lombok.RequiredArgsConstructor;
 import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,10 +16,10 @@ import java.util.List;
 
 @RestController
 @RequestMapping("collection")
+@RequiredArgsConstructor
 public class CollectionController {
 
-    @Autowired
-    CollectionService collectionService;
+    private final CollectionService collectionService;
 
     @PostMapping(path = "/", produces = MediaType.APPLICATION_JSON_VALUE)
     public List<Card> insertCardsIntoCollection(KeycloakAuthenticationToken principal,@Valid @NotNull @RequestBody List<Card> cards) {
@@ -66,6 +65,11 @@ public class CollectionController {
     @GetMapping(path = "/place")
     public List<Card> getPlaceCards(KeycloakAuthenticationToken principal, @RequestParam @NotNull int id) {
         return collectionService.getCardsOfPlace(principal.getName(), id);
+    }
+
+    @GetMapping(path = "/placesOrdered")
+    public List<Card> getOrderedPlaceCards(KeycloakAuthenticationToken principal, @RequestParam @NotNull String placesId) {
+        return collectionService.getOrderedCardsOfPlaces(principal.getName(), placesId);
     }
 
 }

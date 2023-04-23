@@ -36,6 +36,9 @@ public class CardService {
     public static final String CARD_ILLUSTRATION_LINK = "normal";
     public static final String CARD_LINKS = "purchase_uris";
     public static final String CARD_TYPE = "type_line";
+    public static final String CARD_MANA = "mana_cost";
+    public static final String CARD_CMC = "cmc";
+    public static final String CARD_RARITY = "rarity";
     final String EUR_PRICE = "eur";
     final String EUR_PRICE_FOILED = "eur_foil";
     final String USD_PRICE = "usd";
@@ -111,6 +114,54 @@ public class CardService {
             } else if (CARD_TYPE.equals(fieldname) && objectDepth == 1) {
                 jsonToken = jsonParser.nextToken();
                 card.setType(jsonParser.getText());
+            } else if (CARD_CMC.equals(fieldname) && objectDepth == 1) {
+                jsonToken = jsonParser.nextToken();
+                card.setCmc((int) Float.parseFloat(jsonParser.getText()));
+            } else if (CARD_RARITY.equals(fieldname) && objectDepth == 1) {
+                jsonToken = jsonParser.nextToken();
+                card.setRarity(jsonParser.getText());
+            } else if (CARD_MANA.equals(fieldname) && objectDepth == 1) {
+                jsonToken = jsonParser.nextToken();
+                card.setMana(jsonParser.getText());
+                if (card.getMana().contains("{R}") &&
+                        !card.getMana().contains("{G}") &&
+                        !card.getMana().contains("{U}") &&
+                        !card.getMana().contains("{B}") &&
+                        !card.getMana().contains("{W}")) {
+                    card.setColor("red");
+                } else if (!card.getMana().contains("{R}") &&
+                        card.getMana().contains("{G}") &&
+                        !card.getMana().contains("{U}") &&
+                        !card.getMana().contains("{B}") &&
+                        !card.getMana().contains("{W}")) {
+                    card.setColor("green");
+                } else if (!card.getMana().contains("{R}") &&
+                        !card.getMana().contains("{G}") &&
+                        card.getMana().contains("{U}") &&
+                        !card.getMana().contains("{B}") &&
+                        !card.getMana().contains("{W}")) {
+                    card.setColor("blue");
+                } else if (!card.getMana().contains("{R}") &&
+                        !card.getMana().contains("{G}") &&
+                        !card.getMana().contains("{U}") &&
+                        card.getMana().contains("{B}") &&
+                        !card.getMana().contains("{W}")) {
+                    card.setColor("black");
+                } else if (!card.getMana().contains("{R}") &&
+                        !card.getMana().contains("{G}") &&
+                        !card.getMana().contains("{U}") &&
+                        !card.getMana().contains("{B}") &&
+                        card.getMana().contains("{W}")) {
+                    card.setColor("white");
+                } else if (!card.getMana().contains("{R}") &&
+                        !card.getMana().contains("{G}") &&
+                        !card.getMana().contains("{U}") &&
+                        !card.getMana().contains("{B}") &&
+                        !card.getMana().contains("{W}")) {
+                    card.setColor("colorless");
+                } else {
+                    card.setColor("multicolor");
+                }
             }
 
             if (jsonToken == JsonToken.START_OBJECT) objectDepth++;
@@ -137,8 +188,8 @@ public class CardService {
                     card = new Card();
                 }
             }
-
             jsonToken = jsonParser.nextToken();
+
         }
         if (onlyOneCard) {
             listOfCard.add(card);

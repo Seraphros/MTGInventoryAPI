@@ -6,6 +6,7 @@ import fr.cszw.mtginventoryapi.Beans.Paginator;
 import fr.cszw.mtginventoryapi.Beans.Place;
 import fr.cszw.mtginventoryapi.Repositories.CardRepository;
 import fr.cszw.mtginventoryapi.Repositories.PlaceRepository;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.codehaus.jackson.JsonFactory;
 import org.codehaus.jackson.JsonParser;
@@ -15,29 +16,24 @@ import org.springframework.stereotype.Service;
 
 import java.net.HttpURLConnection;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
 @Scope("singleton")
+@RequiredArgsConstructor
+@Slf4j
 public class CollectionService {
 
     private final CardRepository cardRepository;
     private final PlaceRepository placeRepository;
     private final CardService cardService;
     private final PlaceService placeService;
+    private final SetJSONService setJSONService;
+
+
 
     private final int PAGE_SIZE = 100;
-
-    public CollectionService(CardRepository cardRepository, PlaceRepository placeRepository, CardService cardService, PlaceService placeService) {
-        this.cardRepository = cardRepository;
-        this.placeRepository = placeRepository;
-        this.cardService = cardService;
-        this.placeService = placeService;
-    }
 
     public List<Card> getAllCardOfUser(String user) {
         return this.cardRepository.findByOwner(user);
@@ -167,6 +163,82 @@ public class CollectionService {
         }
     }
 
+    public List<Card> getOrderedCardsOfPlaces(String user, String placesId) {
+        if (placesId == null || placesId.equals("")) return new ArrayList<>();
+
+        String[] placesIdParsed = placesId.split(";");
+        List<Card> cards = new ArrayList<>();
+        Arrays.stream(placesIdParsed).forEach(placeId -> {
+            cards.addAll(this.cardRepository.findByPlace(this.placeRepository.findById(Integer.parseInt(placeId)).orElse(null)));
+            cards.forEach(card -> {
+                card.setSet(this.setJSONService.getSetFromList(card.getEdition()));
+                if (card.getRarity().equals("mythic")) card.setRarityValue(3);
+                if (card.getRarity().equals("rare")) card.setRarityValue(2);
+                if (card.getRarity().equals("uncommon")) card.setRarityValue(1);
+                if (card.getRarity().equals("common")) card.setRarityValue(0);
+            });
+        });
+
+        List<Card> cardOrdered = new ArrayList<>();
+
+        List<Card> creatureCards = new ArrayList<>();
+        List<Card> instantCards = new ArrayList<>();
+        List<Card> sorceryCards = new ArrayList<>();
+        List<Card> enchantmentCards = new ArrayList<>();
+        List<Card> planeswalkerCards = new ArrayList<>();
+        List<Card> artifactCards = new ArrayList<>();
+        List<Card> siegeCards = new ArrayList<>();
+        List<Card> landCards = new ArrayList<>();
+
+        cards.forEach(card -> {
+            String firstType = card.getType().toLowerCase().split("//")[0];
+            if (firstType.contains("creature")) {
+                creatureCards.add(card);
+            } else if (firstType.contains("instant")) {
+                instantCards.add(card);
+            } else if (firstType.contains("sorcery")) {
+                sorceryCards.add(card);
+            } else if (firstType.contains("battle")) {
+                siegeCards.add(card);
+            } else if (firstType.contains("planeswalker")) {
+                planeswalkerCards.add(card);
+            } else if (firstType.contains("enchant")) {
+                enchantmentCards.add(card);
+            } else if (firstType.contains("artifact")) {
+                artifactCards.add(card);
+            } else if (firstType.contains("land")) {
+                landCards.add(card);
+            } else {
+                log.error("Could not sort : " + card.getName());
+            }
+        });
+
+
+
+
+
+        OrderingService.classicalCreatureOrdering(creatureCards);
+        OrderingService.classicalOtherOrdering(instantCards);
+        OrderingService.classicalOtherOrdering(sorceryCards);
+        OrderingService.classicalOtherOrdering(enchantmentCards);
+        OrderingService.classicalOtherOrdering(planeswalkerCards);
+        OrderingService.classicalOtherOrdering(artifactCards);
+        OrderingService.classicalOtherOrdering(siegeCards);
+        OrderingService.classicalOtherOrdering(landCards);
+
+        cardOrdered.addAll(creatureCards);
+        cardOrdered.addAll(instantCards);
+        cardOrdered.addAll(sorceryCards);
+        cardOrdered.addAll(enchantmentCards);
+        cardOrdered.addAll(artifactCards);
+        cardOrdered.addAll(planeswalkerCards);
+        cardOrdered.addAll(siegeCards);
+        cardOrdered.addAll(landCards);
+
+
+        return cardOrdered;
+    }
+
     public Paginator getCollectionPaginator(String user, String search) {
         List<Card> cards = this.cardRepository.findByOwner(user);
         cards.sort(Comparator.comparing(Card::getName));
@@ -176,7 +248,33 @@ public class CollectionService {
     }
 
     public void updateAllCards() {
-        this.cardRepository.findAll().forEach(card -> this.cardService.cardList.stream().filter(analysedCard -> analysedCard.getScryfallID().equalsIgnoreCase(card.getScryfallID())).findFirst().ifPresent(baseCard -> this.cardRepository.save(card)));
+        List<Card> cardToUpdate = new ArrayList<>();
+
+        this.cardRepository.findAll().forEach(card -> {
+            try {
+
+            Card listed = this.cardService.cardList.stream().filter(cardListed -> cardListed.getScryfallID().equals(card.getScryfallID())).findFirst().orElse(null);
+            if (listed != null) {
+                if ((card.getColor() == null || !card.getColor().equals(listed.getColor())) ||
+                        (card.getMana() == null || !card.getMana().equals(listed.getMana())) ||
+                        (card.getRarity() == null || !card.getRarity().equals(listed.getRarity())) ||
+                        (card.getIllustration() == null || !card.getIllustration().equals(listed.getIllustration())) ||
+                        (card.getCmc() == null || !card.getCmc().equals(listed.getCmc()))) {
+                    card.setColor(listed.getColor());
+                    card.setMana(listed.getMana());
+                    card.setCmc(listed.getCmc());
+                    card.setRarity(listed.getRarity());
+                    card.setIllustration(listed.getIllustration());
+                    cardToUpdate.add(card);
+                }
+            } }
+            catch (Exception e) {
+                log.error("Error found updating card with id :" + card.getId() + " and name : " + card.getName() + ", error : " + e);
+            }
+
+        });
+
+        this.cardRepository.saveAll(cardToUpdate);
 
     }
 

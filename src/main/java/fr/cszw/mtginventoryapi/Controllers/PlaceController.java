@@ -2,19 +2,19 @@ package fr.cszw.mtginventoryapi.Controllers;
 
 import fr.cszw.mtginventoryapi.Beans.Place;
 import fr.cszw.mtginventoryapi.Services.PlaceService;
+import lombok.RequiredArgsConstructor;
 import org.jetbrains.annotations.NotNull;
 import org.keycloak.adapters.springsecurity.token.KeycloakAuthenticationToken;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.validation.Valid;
 import java.util.List;
 
 @RestController
+@RequiredArgsConstructor
 public class PlaceController {
 
-    @Autowired
-    private PlaceService placeService;
+    private final PlaceService placeService;
 
 
     @GetMapping(path = "/places")
